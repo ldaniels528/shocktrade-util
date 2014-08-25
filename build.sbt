@@ -3,7 +3,7 @@ import Keys._
 
 name := "shocktrade-util"
 
-organization := "srs"
+organization := "com.ldaniels528"
 
 version := "0.1.1"
 
