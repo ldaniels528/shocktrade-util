@@ -1,5 +1,7 @@
 package com.shocktrade.services.util
 
+import scala.collection.JavaConversions._
+
 /**
  * Scala Bean Copy Utilities Singleton
  * @author lawrence.daniels@gmail.com
@@ -11,8 +13,10 @@ object ScalaBeanUtil extends ScalaBeanUtil
  * @author lawrence.daniels@gmail.com
  */
 class ScalaBeanUtil() {
-  import scala.util.{ Try, Success, Failure }
-  import java.lang.reflect.{ Field, Method }
+
+  import java.lang.reflect.{Field, Method}
+
+  import scala.util.{Failure, Success, Try}
 
   /**
    * Copies values from the source instance to the destination instance
@@ -21,7 +25,7 @@ class ScalaBeanUtil() {
   def copy[A, B](src: A, dest: B): B = {
     // get the source and destination fields
     val srcMethods = extractMethods(src.getClass)
-    val destMethods = extractMethods(dest.getClass, true)
+    val destMethods = extractMethods(dest.getClass, isTarget = true)
 
     // for each field that's found in both source and destination,
     // copy its value
@@ -50,7 +54,7 @@ class ScalaBeanUtil() {
     // get the source properties    
     val srcProps = Map(sources flatMap (src =>
       extractMethods(src.getClass) flatMap { m =>
-        val (k, v) = (m.getName(), m.invoke(src))
+        val (k, v) = (m.getName, m.invoke(src))
         if (v != getDefaultValue(m.getReturnType)) Some((k, v)) else None
       }): _*)
 
@@ -67,13 +71,13 @@ class ScalaBeanUtil() {
 
       // copy the values
       extractMethods(destClass, isTarget = true) map (m =>
-        setValue(dest, m, srcProps.get(asGetter(m)) getOrElse getDefaultValue(m.getReturnType)))
+        setValue(dest, m, srcProps.getOrElse(asGetter(m), getDefaultValue(m.getReturnType))))
       dest
     } else {
       // build the destination properties
       val destProps = extractMethods(destClass) map { m =>
-        val name = m.getName()
-        (name, srcProps.get(name) getOrElse getDefaultValue(m.getReturnType))
+        val name = m.getName
+        (name, srcProps.getOrElse(name, getDefaultValue(m.getReturnType)))
       }
 
       // create the destination case class
@@ -98,7 +102,7 @@ class ScalaBeanUtil() {
    */
   protected def getDefaultValue(returnType: Class[_]): Object = {
     returnType match {
-      case c if c.isArray => createTypedArray(returnType.getComponentType(), Array.empty)
+      case c if c.isArray => createTypedArray(returnType.getComponentType, Array.empty)
       case c if c == classOf[Option[_]] => None
       case c if c == classOf[List[_]] => Nil
       case c if c == classOf[Seq[_]] => Seq.empty
@@ -111,8 +115,6 @@ class ScalaBeanUtil() {
   }
 
   protected def getTypedValue(returnType: Class[_], value: Object): Object = {
-    import scala.collection.JavaConversions._
-
     // look for exception cases by value type
     value match {
       // if the value is null ...
@@ -131,7 +133,7 @@ class ScalaBeanUtil() {
           case c if c == classOf[Set[_]] => getTypedArray(returnType, value).toSet
           case c if c == classOf[java.util.Collection[_]] => seqAsJavaList(getTypedArray(returnType, value).toList)
           case c if c == classOf[java.util.List[_]] => seqAsJavaList(getTypedArray(returnType, value).toList)
-          case c if c == classOf[java.util.Set[_]] => asJavaSet(getTypedArray(returnType, value).toSet)
+          case c if c == classOf[java.util.Set[_]] => setAsJavaSet(getTypedArray(returnType, value).toSet)
           case _ => value
         }
     }
@@ -139,7 +141,7 @@ class ScalaBeanUtil() {
 
   protected def getTypedArray(returnType: Class[_], value: Object): Array[Any] = {
     // determine the type of the array
-    val arrayType = returnType.getComponentType()
+    val arrayType = returnType.getComponentType
 
     // convert the value into an array
     value match {
@@ -159,13 +161,13 @@ class ScalaBeanUtil() {
     array
   }
 
-  protected def asGetter(m: Method): String = m.getName().replaceAllLiterally("_$eq", "")
+  protected def asGetter(m: Method): String = m.getName.replaceAllLiterally("_$eq", "")
 
   protected def extractMethods[A](beanClass: Class[A], isTarget: Boolean = false): Seq[Method] = {
     if (isTarget) {
-      beanClass.getDeclaredMethods() filter (_.getName.endsWith("_$eq"))
+      beanClass.getDeclaredMethods filter (_.getName.endsWith("_$eq"))
     } else {
-      beanClass.getDeclaredFields() filterNot (unwantedFields) map (f => beanClass.getMethod(f.getName))
+      beanClass.getDeclaredFields filterNot unwantedFields map (f => beanClass.getMethod(f.getName))
     }
   }
 
