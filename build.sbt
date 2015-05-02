@@ -5,16 +5,14 @@ name := "shocktrade-util"
 
 organization := "com.ldaniels528"
 
-version := "0.1.1"
+version := "0.1.2"
 
-scalaVersion := "2.11.4"
+scalaVersion := "2.11.6"
 
 scalacOptions ++= Seq("-deprecation", "-encoding", "UTF-8", "-feature", "-target:jvm-1.7", "-unchecked",
     "-Ywarn-adapted-args", "-Ywarn-value-discard", "-Xlint")
 
 javacOptions ++= Seq("-Xlint:deprecation", "-Xlint:unchecked", "-source", "1.7", "-target", "1.7", "-g:vars")
-
-publishTo := Some(Resolver.file("file",  new File(Path.userHome.absolutePath+"/.m2/repository")))
 
 // General Dependencies
 libraryDependencies ++= Seq(
